@@ -1,52 +1,16 @@
 # Selectel Billing Exporter
 
-Prometheus exporter для получения информации по биллингу аккаунта облака [Selectel](https://selectel.ru).
+The exporter uses `https://api.selectel.ru/v3/balances` API to get balance info.
 
-## Как работает экспортер
+Selectel API token can be retrieved from https://my.selectel.ru/profile/apikeys
 
-Экспортер раз в час ходит по url `https://api.selectel.ru/v3/balances` с токеном в запросе, получает в json формате инфу по балансу средств на счете и отдает ее по url `/metrics` в формате prometheus.
-
-Для работы экспортера нужно получить API [токен](https://my.selectel.ru/profile/apikeys)
-
-## Как запустить
-
-### Запуск с помощью docker-compose
-
-Создаем `compose.yaml` файл:
-
-```yaml
-services:
-  selectel_exporter:
-    image: mxssl/selectel-billing-exporter:1.1.6
-    ports:
-      - "6789:80"
-    restart: always
-    environment:
-      TOKEN: <тут_указываем_токен>
-```
-
-Запускаем экспортер:
-
-```sh
-docker compose up -d
-```
-
-Проверить работу экспортера:
-
-```sh
-docker compose ps
-docker compose logs
-```
-
-Метрики доступны по url `your_ip:6789/metrics`
-
-## Kubernetes
+## Installing on Kubernetes
 
 ### helm
 
-[Установка helm чарта](https://github.com/mxssl/helm-charts/tree/main/charts/selectel-billing-exporter)
+Helm chart available at https://github.com/mxssl/helm-charts/tree/main/charts/selectel-billing-exporter
 
-### Создание манифестов вручную
+### manual manifests creation
 
 ```yaml
 ---
@@ -93,9 +57,9 @@ spec:
 kubectl apply -n exporters -f your-file.yaml
 ```
 
-Внутри кластера метрики будут доступны по адресу `selectel-billing.exporters.svc.cluster.local:6789/metrics`
+Metrics will be available at `selectel-billing.exporters.svc.cluster.local:6789/metrics`
 
-## Настройка для prometheus
+## Prometheus setup
 
 ```yaml
 - job_name: "selectel_billing"
@@ -104,19 +68,18 @@ kubectl apply -n exporters -f your-file.yaml
     - targets: ["exporter_address:6789"]
 ```
 
-## Пример алерта для alertmanager
+## Alertmanager alert example
 
 ```yaml
 - alert: selectel_billing
-  expr: selectel_billing_final_sum{job="selectel_billing"} / 100 < 30000
+  expr: selectel_billing_final_sum{job="selectel_billing"} / 100 < 10000
   for: 180s
   labels:
     severity: warning
   annotations:
-    summary: "{{ $labels.instance }}: В хостинге Selectel на счете меньше 30 000 рублей"
-    description: "Необходимо пополнить счет в хостинге Selectel"
+    summary: "{{ $labels.instance }}: Selectel balance is below 10,000 rubles"
 ```
 
-## Дашборд для графаны
+## Grafana dashboard
 
-[Дашборд](https://grafana.com/dashboards/9315)
+https://grafana.com/dashboards/9315
